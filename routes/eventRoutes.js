@@ -3,11 +3,9 @@ const requestIp = require("request-ip");
 const Event = require("../models/Event");
 const router = express.Router();
 
-// Add Event
 router.post("/add", async (req, res) => {
     const { title, date, time, description, reminder } = req.body;
     const ipAddress = requestIp.getClientIp(req);
-    console.log("Detected IP:", ipAddress); // Debugging
 
     try {
         const newEvent = new Event({ title, date, time, description, ipAddress, reminder });
@@ -19,18 +17,29 @@ router.post("/add", async (req, res) => {
 });
 
 router.get("/events", async (req, res) => {
-    const ipAddress = requestIp.getClientIp(req); // Get User's IP Address
-    console.log("Fetching events for IP:", ipAddress);
+    const ipAddress = requestIp.getClientIp(req);
+    const { date, time } = req.query;
+
+    let query = { ipAddress };
+
+    if (date) {
+        const startOfDay = new Date(date);
+        const endOfDay = new Date(date);
+        endOfDay.setHours(23, 59, 59, 999); // Set end of day for full-day range
+
+        query.date = { $gte: startOfDay, $lt: endOfDay }; // Match the entire day
+    }
 
     try {
-        const events = await Event.find({ ipAddress }); // Filter events by IP
+        const events = await Event.find(query);
         res.status(200).json(events);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
-// ✅ Update Event
+
+
 router.put("/event/:id", async (req, res) => {
     try {
         const updatedEvent = await Event.findByIdAndUpdate(req.params.id, req.body, { new: true });
@@ -43,7 +52,6 @@ router.put("/event/:id", async (req, res) => {
     }
 });
 
-// ✅ Delete Event
 router.delete("/event/:id", async (req, res) => {
     try {
         const deletedEvent = await Event.findByIdAndDelete(req.params.id);
