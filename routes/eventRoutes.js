@@ -4,11 +4,11 @@ const Event = require("../models/Event");
 const router = express.Router();
 
 router.post("/add", async (req, res) => {
-    const { title, date, time, description, reminder } = req.body;
+    const { title, startTime, endTime, description, category, color, recurrence, notifications } = req.body;
     const ipAddress = requestIp.getClientIp(req);
 
     try {
-        const newEvent = new Event({ title, date, time, description, ipAddress, reminder });
+        const newEvent = new Event({ title, startTime, endTime, description, ipAddress, category, color, recurrence, notifications });
         await newEvent.save();
         res.status(201).json(newEvent);
     } catch (err) {
@@ -18,16 +18,16 @@ router.post("/add", async (req, res) => {
 
 router.get("/events", async (req, res) => {
     const ipAddress = requestIp.getClientIp(req);
-    const { date, time } = req.query;
+    const { date } = req.query;
 
     let query = { ipAddress };
 
     if (date) {
         const startOfDay = new Date(date);
         const endOfDay = new Date(date);
-        endOfDay.setHours(23, 59, 59, 999); // Set end of day for full-day range
+        endOfDay.setHours(23, 59, 59, 999);
 
-        query.date = { $gte: startOfDay, $lt: endOfDay }; // Match the entire day
+        query.startTime = { $gte: startOfDay, $lt: endOfDay };
     }
 
     try {
@@ -37,8 +37,6 @@ router.get("/events", async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
-
-
 
 router.put("/event/:id", async (req, res) => {
     try {
@@ -63,6 +61,5 @@ router.delete("/event/:id", async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
-
 
 module.exports = router;
